@@ -129,13 +129,15 @@ class DataDownloader:
             for csv_file in csv_files:
                 with open(csv_file,'r', encoding = "windows-1250", newline="") as dest_f:
                     data_iter = csv.reader(dest_f, delimiter = ';', quotechar = '"')
+                    #num_of_rows = len(list(data_iter))
+                    #num_of_cols = len(self.col_list)
+                    #anArray = zeros((ph,pw), dtype='O')
+                    dest_f.seek(0)
                     for data in data_iter:
                         a = tuple("-1" if re.match(regex, x) else x.replace(',', '.') for x in data) + (region,)
                         nplist.append(np.asarray(a, dtype=d_type).T)
-                    #print(nplist[1])
                     #exit(1)
                     #spocitat kolko ma csv riadkov, alokovat pole a potom vkladat na indexy np.empty()\
-            
 
             return self.col_list, nplist
 
@@ -176,7 +178,6 @@ class DataDownloader:
 
 downloader = DataDownloader()
 data = downloader.parse_region_data('VYS')
-print(data[1][-1])
 if __name__ == "__mainkek__d":
     downloader = DataDownloader()
     #downloader.download_data()
