@@ -64,7 +64,7 @@ def plot_stat(data_source, fig_location=None, show_figure=False):
     regions = {'PHA': 1, 'STC': 2, 'JHC': 3, 'PLK': 4, 'ULK': 5, 'HKK': 6, 'JHM': 7, 'MSK': 8,
                'OLK': 9, 'ZLK': 10, 'VYS': 11, 'PAK': 12, 'LBK': 13, 'KVK': 14}
 
-    # number of accidents by year in given region 
+    # number of accidents by year in given region
     region_stats = get_accident_stats(data_source)
     # plotting all regions -> sequence labels for all regions needed
     x = np.arange(len(regions.keys()))
@@ -101,17 +101,19 @@ def plot_stat(data_source, fig_location=None, show_figure=False):
     if(fig_location is not None):
         plt.savefig(fig_location + '/plot.png')
 
+
 def dir_path(path):
     '''if given path is not valid, create the missing directories'''
     if os.path.isfile(path):
-        print(f"Given path \'{path}\' corresponds to existing file, but directory was expected!")
-        return None 
+        print(
+            f"Given path \'{path}\' corresponds to existing file, but directory was expected!")
+        return None
     if not os.path.isdir(path):
         try:
             os.makedirs(path, exist_ok=True)
         except OSError as e:
             if e.errno != errno.EEXIST:
-                raise   
+                raise
             pass
     return path
 
