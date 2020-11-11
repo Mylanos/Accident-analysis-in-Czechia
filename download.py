@@ -5,8 +5,8 @@ from os.path import isfile, join
 from zipfile import ZipFile
 import numpy as np
 import datetime, gzip, pickle
-
-
+import io 
+from io import BytesIO
 
 class DataDownloader:
 
@@ -33,6 +33,7 @@ class DataDownloader:
         self.regions = regions
         self.data_files = []
         self.cache = {}
+        self.zips = []
         self.col_list = ["p1", "p36", "p37", "p2a", "weekday(p2a)", "p2b", "p6", "p7", "p8", "p9", "p10", "p11", "p12", "p13a", "p13b", "p13c", "p14", "p15", 
                         "p16", "p17", "p18", "p19", "p20", "p21", "p22", "p23", "p24", "p27", "p28", "p34", "p35", "p39", "p44", "p45a", "p47", "p48a", 
                         "p49", "p50a", "p50b", "p51", "p52", "p53", "p55a", "p57", "p58", "a", "b", "d", "e", "f", "g", "h", "i", "j", "k", "l", 
@@ -43,6 +44,25 @@ class DataDownloader:
                 os.mkdir(folder)
             except OSError:
                 print ("Creation of the directory %s failed" % path)
+
+    def save_zip_file(self, filename, response):
+        '''Writes the zip data to a file.'''
+        with open(filename, 'wb') as fd:
+            fd.write(response.content) 
+
+    def find_latest_zips(self, files):
+        '''searching the most recent file for every year'''
+        p = re.compile("([0-9]*).([0-9]*)\.zip")
+        past_year = p.search(files[0]).group(2)
+        for i, file in enumerate(files):
+            result = p.search(file)
+            present_year = result.group(2)
+            if(int(present_year) != int(past_year)):
+                self.data_files.append(past_file)
+            if(i == len(files)-1):
+                self.data_files.append(file)
+            past_year = present_year
+            past_file = file
 
     def download_data(self):
         cookies = {
@@ -70,48 +90,24 @@ class DataDownloader:
         response = requests.get(self.url, headers=headers, cookies=cookies)
         soup = BeautifulSoup(response.text, 'html.parser')
         files = [a['href'] for a in soup.find_all("a", class_="btn-primary")]
-        
-        #searching the most recent file for every year
-        p = re.compile("([0-9]*).([0-9]*)\.zip")
-        past_year = p.search(files[0]).group(2)
-        for i, file in enumerate(files):
-            result = p.search(file)
-            present_year = result.group(2)
-            if(int(present_year) != int(past_year) or i == len(files)-1):
-                self.data_files.append(past_file)
-            past_year = present_year
-            past_file = file
+        self.find_latest_zips(files)
 
         #requesting files and saving them to folder
         for file in self.data_files:
             url = self.url + file
-            if not path.isdir(file[:-4]):
+            if not path.isfile(file):
                 r = requests.get(url, headers=headers, cookies=cookies, stream=True)
-                with open(file, 'wb') as fd:
-                    for chunk in r.iter_content(chunk_size=128):
-                        fd.write(chunk)            
-                with ZipFile(file, 'r') as zip:
-                    zip.extractall(file[:-4])
-                os.remove(file)
-        self.data_files = [f[:-4] for f in self.data_files]
-
+                self.save_zip_file(file, r)
+                zipfile = ZipFile(BytesIO(r.content))
+                self.zips.append(zipfile)
+            else:
+                zipfile = ZipFile(file, 'r')
+                self.zips.append(zipfile)
 
     def parse_region_data(self, region):
         if region in self.regions.keys():
-            #find csv files comforming to given region
-            csv_files = []
-            for root, dirs, files in os.walk(self.folder, topdown = False):
-                for name in files:
-                    if name[:-4] == self.regions.get(region):
-                        csv_files.append(os.path.join(root, name))
-
-            """col_list = ["ID", "Druh komunikace", "Číslo komunikácie", "Dátum", "Čas", "Druh nehody", "Druh srážky vozidel", "Druh pevné překážky", 
-                        "Charakter nehody", "Zaviněný nehody", "Alkohol u viníka", "Hlavní príčiny nehody", "Usmrceno", "Těžce zraněno",
-                        "Lehce zraněno", "Hmotná škoda", "Druh povrchu vozovky", "Stav povrchu vozovky", "Stav komunikace", "Povětrnostní podmínky", 
-                        "Viditelnost", "Rozhledové poměry", "Dělené komunikace", "Situování nehody na komunikaci", "Řízení provozu v době nehody", 
-                        "Místní úprava přednosti v jízdě", "Specifická místa a objekty v místě nehody", "Směrové pomery", "Kategorie chodce", "Stav chodce",
-                        "Chování chodce", "Situace v místě nehody", "Následky na životech a zdraví chodcu", "Počet zúčastněných vozidel", "Místo doprvní nehody",
-                        ""]"""
+            if(not self.zips):
+                self.download_data()
             d_type= np.dtype([('f1', 'i8'), ('f2', 'i'), ('f3', 'i2'), ('f5', 'datetime64[D]'), ('f6', 'i'), ('f7', 'i2'), ('f8', 'i'), ('f9', 'i'),
                     ('f10', 'i'), ('f11', 'i'), ('f12', 'i2'), ('f13', 'i'), ('f14', 'i4'), ('f15', 'i2'), ('f16', 'i2'), ('f17', 'i2'), ('f18', 'i4'), 
                     ('f19', 'i'), ('f20', 'i'), ('f21', 'i'), ('f22', 'i'), ('f23', 'i'), ('f24', 'i'), ('f25', 'i'), ('f26', 'i'), ('f27', 'i'), 
@@ -120,24 +116,19 @@ class DataDownloader:
                     ('f46', 'i'), ('f47', 'd'), ('f48', 'd'), ('f49', 'd'), ('f50', 'd'), ('f51', 'd'), ('f52', 'd'), ('f53', 'U25'), ('f54', 'U25'), 
                     ('f55', 'i'), ('f56', 'U25'), ('f57', 'U10'), ('f58', 'U25'), ('f59', 'd'), ('f60', 'U25'), ('f61', 'U25'), ('f62', 'i8'), ('f63', 'i8'),
                      ('f64', 'U25'), ('f65', 'i'), ('f66', 'U25')])
-            #lada: muzes si vytvořit array pro zrovna otevrenej soubor podle poctu radku, a potom ty pole concatenovat funkci np.concatenate
-            #hound: nebo to hazet do listu a na konci to pretvorit do array
-            #lada: to bude slow
+
             nplist = []
             #regex for XX, A:/B:.., empty string elimination
             regex = r"^(\w:|\w\w|)$"
-            for csv_file in csv_files:
-                with open(csv_file,'r', encoding = "windows-1250", newline="") as dest_f:
-                    data_iter = csv.reader(dest_f, delimiter = ';', quotechar = '"')
-                    #num_of_rows = len(list(data_iter))
-                    #num_of_cols = len(self.col_list)
-                    #anArray = zeros((ph,pw), dtype='O')
-                    dest_f.seek(0)
-                    for data in data_iter:
-                        a = tuple("-1" if re.match(regex, x) else x.replace(',', '.') for x in data) + (region,)
-                        nplist.append(np.asarray(a, dtype=d_type).T)
-                    #exit(1)
-                    #spocitat kolko ma csv riadkov, alokovat pole a potom vkladat na indexy np.empty()\
+            for z in self.zips:
+                for name in z.namelist():
+                    if name[:-4] == self.regions.get(region):
+                        content = io.TextIOWrapper(z.open(name), encoding='windows-1250', newline='')
+                        data_iter = csv.reader(content, delimiter = ';', quotechar = '"')
+                        for data in data_iter:
+                            a = tuple("-1" if re.match(regex, x) else x.replace(',', '.') for x in data) + (region,)
+                            nplist.append(np.asarray(a, dtype=d_type))
+                            
 
             return self.col_list, nplist
 
@@ -176,11 +167,10 @@ class DataDownloader:
                            
         return self.col_list, nplist
 
-downloader = DataDownloader()
-data = downloader.parse_region_data('VYS')
-if __name__ == "__mainkek__d":
+
+if __name__ == "__main__":
     downloader = DataDownloader()
-    #downloader.download_data()
+    downloader.download_data()
     regions = ["VYS", "PHA", "PLK"]
     region_data = downloader.get_list(regions)
     print("                   COLUMNS")
