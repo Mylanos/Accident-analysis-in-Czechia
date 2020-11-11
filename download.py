@@ -150,7 +150,6 @@ class DataDownloader:
                             a = tuple(
                                 "-1" if re.match(regex, x) else x.replace(',', '.') for x in data) + (region,)
                             nplist.append(np.asarray(a, dtype=d_type))
-
             return self.col_list, nplist
 
     def save_cache(self, region):

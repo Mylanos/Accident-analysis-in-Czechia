@@ -99,23 +99,32 @@ def plot_stat(data_source, fig_location=None, show_figure=False):
     if(show_figure is not None):
         plt.show()
     if(fig_location is not None):
-        plt.savefig(fig_location + '/plot.png')
+        plt.savefig(fig_location)
+
+
+def divide_file_dirs(path):
+    '''divides file with directories'''
+
+    data = path.split('/')
+    dir_path = ('/'.join(data[:-1]))
+    print(dir_path)
+    return dir_path
 
 
 def dir_path(path):
     '''if given path is not valid, create the missing directories'''
-    if os.path.isfile(path):
-        print(
-            f"Given path \'{path}\' corresponds to existing file, but directory was expected!")
-        return None
-    if not os.path.isdir(path):
+    if os.path.exists(path):
+        return path
+    else:
+        dir_path = divide_file_dirs(path)
         try:
-            os.makedirs(path, exist_ok=True)
+            os.makedirs(dir_path, exist_ok=True)
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
             pass
-    return path
+        return path
+
 
 
 if __name__ == "__main__":
