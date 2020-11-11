@@ -4,6 +4,9 @@ import math
 import re
 from download import DataDownloader
 from datetime import datetime
+import argparse as ap
+import os
+import errno
 
 
 def get_accident_stats(data_source):
@@ -89,9 +92,27 @@ def plot_stat(data_source, fig_location=None, show_figure=False):
         "Počet nehôd na území Českej Republiky v jednotlivých rokoch", fontsize=14)
     plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95,
                         top=0.95, wspace=0, hspace=0)
-    plt.show(fig)
+    if(show_figure is not None):
+        plt.show()
+    if(fig_location is not None):
+        plt.savefig(fig_location + '/plot.png')
+    plt.show()
+
+def dir_path(path):
+    if not os.path.isdir(path):
+        try:
+            os.makedirs(path, exist_ok=True)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise   
+            pass
+    return path
 
 
 if __name__ == "__main__":
+    parser = ap.ArgumentParser(description="get_stat.py")
+    parser.add_argument("--fig_location", type=dir_path)
+    parser.add_argument("--show_figure")
+    arguments, leftovers = parser.parse_known_args()
     data_source = DataDownloader().get_list(None)
-    plot_stat(data_source)
+    plot_stat(data_source, arguments.fig_location, arguments.show_figure)
