@@ -64,9 +64,13 @@ def plot_stat(data_source, fig_location=None, show_figure=False):
     regions = {'PHA': 1, 'STC': 2, 'JHC': 3, 'PLK': 4, 'ULK': 5, 'HKK': 6, 'JHM': 7, 'MSK': 8,
                'OLK': 9, 'ZLK': 10, 'VYS': 11, 'PAK': 12, 'LBK': 13, 'KVK': 14}
 
+    # number of accidents by year in given region 
     region_stats = get_accident_stats(data_source)
+    # plotting all regions -> sequence labels for all regions needed
     x = np.arange(len(regions.keys()))
+    # region shortcuts corresponding to x
     x_labels = [region for region in regions.keys()]
+
     year_statistics = yearly_stats_by_regions(region_stats)
 
     num_of_years = len(year_statistics.keys())
@@ -96,9 +100,12 @@ def plot_stat(data_source, fig_location=None, show_figure=False):
         plt.show()
     if(fig_location is not None):
         plt.savefig(fig_location + '/plot.png')
-    plt.show()
 
 def dir_path(path):
+    '''if given path is not valid, create the missing directories'''
+    if os.path.isfile(path):
+        print(f"Given path \'{path}\' corresponds to existing file, but directory was expected!")
+        return None 
     if not os.path.isdir(path):
         try:
             os.makedirs(path, exist_ok=True)
@@ -111,8 +118,8 @@ def dir_path(path):
 
 if __name__ == "__main__":
     parser = ap.ArgumentParser(description="get_stat.py")
-    parser.add_argument("--fig_location", type=dir_path)
-    parser.add_argument("--show_figure")
+    parser.add_argument("--fig_location", type=dir_path, action='store')
+    parser.add_argument("--show_figure", default=False, action='store_true')
     arguments, leftovers = parser.parse_known_args()
     data_source = DataDownloader().get_list(None)
     plot_stat(data_source, arguments.fig_location, arguments.show_figure)

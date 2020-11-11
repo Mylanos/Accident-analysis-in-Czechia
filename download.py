@@ -116,8 +116,10 @@ class DataDownloader:
     def parse_region_data(self, region):
         '''Parses csv files, converts rows in csv to ndarray with correct datatypes, return column names and list of aforementioned ndarrays.'''
         if region in self.regions.keys():
+            # in case the data is not downloaded or loaded
             if(not self.zips):
                 self.download_data()
+            # datatype for given columns in csv files
             d_type = np.dtype([('f1', 'i8'), ('f2', 'i'), ('f3', 'i2'), ('f5', 'datetime64[D]'), ('f6', 'i'), ('f7', 'i2'), ('f8', 'i'), ('f9', 'i'),
                                ('f10', 'i'), ('f11', 'i'), ('f12', 'i2'), ('f13', 'i'), ('f14',
                                                                                          'i4'), ('f15', 'i2'), ('f16', 'i2'), ('f17', 'i2'), ('f18', 'i4'),
@@ -136,6 +138,7 @@ class DataDownloader:
             nplist = []
             # regex for XX, A:/B:.., empty string elimination
             regex = r"^(\w:|\w\w|)$"
+            # processes rows in csv files to ndarrays with appropriate datatypes
             for z in self.zips:
                 for name in z.namelist():
                     if name[:-4] == self.regions.get(region):
@@ -158,6 +161,13 @@ class DataDownloader:
     def load_cache(self, region):
         '''Load cache from local storage.'''
         with gzip.open("data/" + self.cache_filename.format(region), 'rb') as f:
+            try:
+                while f.read(1024 * 1024):
+                    pass
+            except:
+                print("Corrupted cache gzip file!")
+                exit(1)
+            f.seek(0)
             return pickle.load(f)
 
     def search_cache_file(self, region):
@@ -168,11 +178,14 @@ class DataDownloader:
         return False
 
     def get_list(self, regions=None):
+        '''processes all specified regions '''
         if regions is None:
             regions = self.regions.keys()
         nplist = []
+        # in case only one region was passed as a string
         if(type(regions) == str):
             regions = [regions]
+        # loads data from cache or asks for missing data from parse_region_data
         for region in regions:
             if region in self.cache.keys():
                 nplist += self.cache.get(region)
