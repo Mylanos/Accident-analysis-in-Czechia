@@ -19,11 +19,11 @@ def get_accident_stats(data_source):
     for i in range(len(content)):
         date = str(np.datetime64(content[i]['f5']).astype('datetime64[Y]'))
         region = str(content[i]['f66'])
-        if(current_region != region):
+        if (current_region != region):
             stats[current_region] = region_stats
             region_stats = {current_date: 0}
             current_region = region
-        if(current_date == date):
+        if (current_date == date):
             region_stats[date] += 1
         else:
             region_stats[date] = 1
@@ -47,12 +47,12 @@ def yearly_stats_by_regions(region_stats):
 def label_bars(rects, ax, indexes):
     """labels bars in graph with order of accident occurances"""
     for i, rect in enumerate(rects):
-        if(indexes[i] == 0):
+        if (indexes[i] == 0):
             rect.set_color('#38aef2')
         else:
             rect.set_color('#1085c9')
         height = rect.get_height()
-        ax.annotate('{}'.format(indexes[i]+1),
+        ax.annotate('{}'.format(indexes[i] + 1),
                     xy=(rect.get_x() + rect.get_width() / 2, height),
                     xytext=(0, 1),  # 3 points vertical offset
                     textcoords="offset points",
@@ -96,18 +96,20 @@ def plot_stat(data_source, fig_location=None, show_figure=False):
         "Počet nehôd na území Českej Republiky v jednotlivých rokoch", fontsize=14)
     plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95,
                         top=0.95, wspace=0, hspace=0)
-    if(show_figure is not None):
+    if show_figure is True:
         plt.show()
-    if(fig_location is not None):
+    if fig_location is not None:
         plt.savefig(fig_location)
 
 
 def divide_file_dirs(path):
     '''divides file with directories'''
-
-    data = path.split('/')
-    dir_path = ('/'.join(data[:-1]))
-    print(dir_path)
+    if(path.find('/') > 0):
+        data = path.split('/')
+        dir_path = ('/'.join(data[:-1]))
+        print(dir_path)
+    else:
+        dir_path = '.'
     return dir_path
 
 
@@ -117,6 +119,7 @@ def dir_path(path):
         return path
     else:
         dir_path = divide_file_dirs(path)
+        print(dir_path)
         try:
             os.makedirs(dir_path, exist_ok=True)
         except OSError as e:
@@ -124,7 +127,6 @@ def dir_path(path):
                 raise
             pass
         return path
-
 
 
 if __name__ == "__main__":
