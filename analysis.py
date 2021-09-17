@@ -5,15 +5,12 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import seaborn as sns
 import numpy as np
-# import os
-# muzete pridat libovolnou zakladni knihovnu ci knihovnu predstavenou na prednaskach
-# dalsi knihovny pak na dotaz
 import gzip
 import pickle
 
 
-# Ukol 1: nacteni dat
 def get_dataframe(filename: str, verbose: bool = False) -> pd.DataFrame:
+    """Vyvorenie dataframu pre sledovane parametre zo subora s datami o nehodovosti v ČR"""
     with gzip.open(filename, 'rb') as f:
         content = pickle.load(f)
     if verbose:
@@ -38,6 +35,7 @@ def get_dataframe(filename: str, verbose: bool = False) -> pd.DataFrame:
 # Ukol 2: následky nehod v jednotlivých regionech
 def plot_conseq(df: pd.DataFrame, fig_location: str = None,
                 show_figure: bool = False):
+    """Vykreslenie grafu analyzujúceho následky nehôd v jednotlivých regiónoch"""
     # data processing
     data = df[['p13a', 'p13b', 'p13c', 'region']].copy().groupby(["region"]).sum().reset_index()
     test = df[['p13a', 'region']].copy().groupby(["region"]).count().reset_index()
@@ -88,7 +86,7 @@ def plot_conseq(df: pd.DataFrame, fig_location: str = None,
 # Ukol3: příčina nehody a škoda
 def plot_damage(df: pd.DataFrame, fig_location: str = None,
                 show_figure: bool = False):
-    # data processing
+    """Vykreslenie grafu analyzujúceho príčiny nehôd a ich dopad na škody"""
     bins = [0, 101, 210, 312, 415, 517, 616]
     names = ['nezaviněná řidičem', 'nepřiměřená rychlost jízdy', 'nesprávné předjíždění', 'nedání přednosti v jízdě',
              'nesprávný způsob jízdy', 'technická závada vozidla']
@@ -141,7 +139,7 @@ def plot_damage(df: pd.DataFrame, fig_location: str = None,
 # Ukol 4: povrch vozovky
 def plot_surface(df: pd.DataFrame, fig_location: str = None,
                  show_figure: bool = False):
-    # data processing
+    """Vykreslenie grafu analyzujúceho stavu vozovky a ich vplyvu na nehodovost"""
     data = df[['region', 'date', 'p16']].copy()
     crosstable = pd.crosstab(index=[data['region'], data['date']], columns=data['p16'])
     crosstable = crosstable.rename(columns={0: "jiný stav",
@@ -203,9 +201,7 @@ def plot_surface(df: pd.DataFrame, fig_location: str = None,
 
 
 if __name__ == "__main__":
-    # zde je ukazka pouziti, tuto cast muzete modifikovat podle libosti
-    # skript nebude pri testovani pousten primo, ale budou volany konkreni ¨
-    # funkce.
+    # defaultly the output is stored in a file 01_nasledky.png/02_priciny.png/03_stav.png
     df = get_dataframe("accidents.pkl.gz")
     plot_conseq(df, fig_location="01_nasledky.png")
     plot_damage(df, fig_location="02_priciny.png")
