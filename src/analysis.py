@@ -7,14 +7,17 @@ import seaborn as sns
 import numpy as np
 import gzip
 import pickle
+from pathlib import Path
 
 
 def get_dataframe(filename: str, verbose: bool = False) -> pd.DataFrame:
     """Vyvorenie dataframu pre sledovane parametre zo subora s datami o nehodovosti v ČR"""
+    print("Loading file data...")
     with gzip.open(filename, 'rb') as f:
         content = pickle.load(f)
     if verbose:
         print("orig_size={:.1f} MB".format(content.memory_usage(index=False, deep=True).sum() / 1048576))
+    print("Parsing data...")
     regions = content["region"]
     content = content.iloc[:, 0:-1].astype('category')
     content["date"] = content["p2a"].astype("datetime64[ns]")
@@ -37,6 +40,7 @@ def plot_conseq(df: pd.DataFrame, fig_location: str = None,
                 show_figure: bool = False):
     """Vykreslenie grafu analyzujúceho následky nehôd v jednotlivých regiónoch"""
     # data processing
+    print("Processing data...")
     data = df[['p13a', 'p13b', 'p13c', 'region']].copy().groupby(["region"]).sum().reset_index()
     test = df[['p13a', 'region']].copy().groupby(["region"]).count().reset_index()
     data['accidents'] = test['p13a']
@@ -44,6 +48,7 @@ def plot_conseq(df: pd.DataFrame, fig_location: str = None,
 
     # data visualization
     if fig_location or show_figure:
+        print("Plotting consequences graph...")
         sns.set(rc={'axes.grid': True, "axes.grid.axis": "both", "axes.linewidth": 0.7, "axes.facecolor": "lightgrey"})
         fig, axes = plt.subplots(4, 1, sharex=True, figsize=(7.13, 9.4))
         fig.patch.set_facecolor('#e6e6e6')
@@ -80,6 +85,7 @@ def plot_conseq(df: pd.DataFrame, fig_location: str = None,
         if show_figure:
             plt.show()
         if fig_location:
+            print(f"Storing the file... {fig_location}")
             plt.savefig(fig_location)
 
 
@@ -87,6 +93,7 @@ def plot_conseq(df: pd.DataFrame, fig_location: str = None,
 def plot_damage(df: pd.DataFrame, fig_location: str = None,
                 show_figure: bool = False):
     """Vykreslenie grafu analyzujúceho príčiny nehôd a ich dopad na škody"""
+    print("Processing data...")
     bins = [0, 101, 210, 312, 415, 517, 616]
     names = ['nezaviněná řidičem', 'nepřiměřená rychlost jízdy', 'nesprávné předjíždění', 'nedání přednosti v jízdě',
              'nesprávný způsob jízdy', 'technická závada vozidla']
@@ -99,6 +106,7 @@ def plot_damage(df: pd.DataFrame, fig_location: str = None,
 
     # data visualization
     if fig_location or show_figure:
+        print("Plotting graph of inflicted damages...")
         sns.set(rc={'axes.grid': True, "axes.grid.axis": "y", "axes.linewidth": 0.7, "axes.facecolor": "lightgrey"})
         fig, axes = plt.subplots(2, 2, figsize=(12, 8.27))
         fig.patch.set_facecolor('#e6e6e6')
@@ -133,6 +141,7 @@ def plot_damage(df: pd.DataFrame, fig_location: str = None,
         if show_figure:
             plt.show()
         if fig_location:
+            print(f"Storing the file... {fig_location}")
             plt.savefig(fig_location)
 
 
@@ -140,6 +149,7 @@ def plot_damage(df: pd.DataFrame, fig_location: str = None,
 def plot_surface(df: pd.DataFrame, fig_location: str = None,
                  show_figure: bool = False):
     """Vykreslenie grafu analyzujúceho stavu vozovky a ich vplyvu na nehodovost"""
+    print("Processing data...")
     data = df[['region', 'date', 'p16']].copy()
     crosstable = pd.crosstab(index=[data['region'], data['date']], columns=data['p16'])
     crosstable = crosstable.rename(columns={0: "jiný stav",
@@ -164,6 +174,7 @@ def plot_surface(df: pd.DataFrame, fig_location: str = None,
 
     # data visualization
     if fig_location or show_figure:
+        print("Plotting graph of surface effect on accidents...")
         sns.set(rc={'axes.grid': True, "axes.grid.axis": "both", "axes.linewidth": 0.8, "axes.facecolor": "lightgrey"})
         fig, axes = plt.subplots(2, 2, figsize=(12, 8.27), sharey=True, sharex=True)
         fig.patch.set_facecolor('#e6e6e6')
@@ -197,12 +208,14 @@ def plot_surface(df: pd.DataFrame, fig_location: str = None,
         if show_figure:
             plt.show()
         if fig_location:
+            print(f"Storing the file... {fig_location}")
             plt.savefig(fig_location)
 
 
 if __name__ == "__main__":
     # defaultly the output is stored in a file 01_nasledky.png/02_priciny.png/03_stav.png
-    df = get_dataframe("accidents.pkl.gz")
-    plot_conseq(df, fig_location="01_nasledky.png")
-    plot_damage(df, fig_location="02_priciny.png")
-    plot_surface(df, fig_location="03_stav.png")
+    main_folder = Path(__file__).parent.parent.resolve()
+    df = get_dataframe(main_folder / "accidents.pkl.gz")
+    plot_conseq(df, fig_location=main_folder / "graphs/01_nasledky.png")
+    plot_damage(df, fig_location=main_folder / "graphs/02_priciny.png")
+    plot_surface(df, fig_location=main_folder / "graphs/03_stav.png")

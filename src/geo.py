@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 import contextily as ctx
 import sklearn.cluster
 import numpy as np
-import gzip
-import pickle
+from pathlib import Path
+
 
 
 def make_geo(df: pd.DataFrame) -> geopandas.GeoDataFrame:
@@ -16,6 +16,7 @@ def make_geo(df: pd.DataFrame) -> geopandas.GeoDataFrame:
     """Konvertovani dataframe do geopandas.GeoDataFrame se spravnym kodovani"""
     df = df[df["d"].notna()]
     df = df[df["e"].notna()]
+    print("Creating main GeoDataFrame...")
     gdf = geopandas.GeoDataFrame(
         df, geometry=geopandas.points_from_xy(df["d"], df["e"]), 
         crs="EPSG:5514"
@@ -28,6 +29,7 @@ def plot_geo(gdf: geopandas.GeoDataFrame, fig_location: str = None,
 ):
     """ Vykresleni grafu s dvemi podgrafy podle lokality nehody """
     if fig_location or show_figure:
+        print("Plotting points graph...")
         fig, axes = plt.subplots(
             1, 2, figsize=(11.69, 8.27), sharex=True,
             sharey=True
@@ -45,6 +47,7 @@ def plot_geo(gdf: geopandas.GeoDataFrame, fig_location: str = None,
             label="Nehody v obci",
             color="tab:green",
         )
+        print("Adding base map...")
         ctx.add_basemap(
             axes[0], crs=plk.crs.to_string(), 
             source=ctx.providers.Stamen.TonerLite
@@ -60,6 +63,7 @@ def plot_geo(gdf: geopandas.GeoDataFrame, fig_location: str = None,
 
         plt.tight_layout()
         if fig_location is not None:
+            print(f"Storing the file... {fig_location}")
             plt.savefig(fig_location)
         if show_figure:
             plt.show()
@@ -82,18 +86,21 @@ def plot_cluster(
         db2 = db2.dissolve(by="cluster", aggfunc={"p1": "count"}).rename(
             columns=dict(p1="cnt")
         )
-
+        
+        print("Creating clustered GeoDataFrame...")
         coords = geopandas.GeoDataFrame(
             geometry=geopandas.points_from_xy(
                 db.cluster_centers_[:, 0], db.cluster_centers_[:, 1]
             )
         )
 
+        print("Merging points to clusters...")
         db3 = db2.merge(coords, left_on="cluster", right_index=True).set_geometry(
             "geometry_y"
         )
 
         # Zobrazíme graf tak, že velikost bodu bude odpovídat
+        print("Plotting cluster graph...")
         plt.figure(figsize=(11.69, 8.27)) 
         ax = plt.gca()
         ax.axis("off")
@@ -107,6 +114,7 @@ def plot_cluster(
             ax=ax, markersize=db3["cnt"], column="cnt", legend=True,
             alpha=0.5
         )
+        print("Adding base map...")
         ctx.add_basemap(
             ax, crs="EPSG:5514", source=ctx.providers.Stamen.TonerLite, 
             alpha=0.6
@@ -114,13 +122,16 @@ def plot_cluster(
 
         plt.tight_layout()
         if fig_location is not None:
+            print(f"Storing the file... {fig_location}")
             plt.savefig(fig_location)
         if show_figure:
             plt.show()
 
 
 if __name__ == "__main__":
-    # defaultly the output is stored in a file geo1.png/geo2.png files
+    # vychodze nastavenie vystupu je do suborov graphs/geo1.png|geo2.png 
+    main_folder = Path(__file__).parent.parent.resolve()
+    print("Loading file data...")
     gdf = make_geo(pd.read_pickle("accidents.pkl.gz"))
-    plot_geo(gdf, "geo1.png", False)
-    plot_cluster(gdf, "geo2.png", False)
+    plot_geo(gdf, main_folder / "graphs/geo1.png", False)
+    plot_cluster(gdf, main_folder / "graphs/geo2.png", False)

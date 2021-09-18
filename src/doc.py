@@ -1,6 +1,7 @@
 #!/usr/bin/env python3.8
 # coding=utf-8
 
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -16,6 +17,7 @@ def load_data(filename: str):
 
     # two new dataframes for better preservation of rows as there probably wont 
     # be many rows with None's in both cols
+    print("Parsing data...")
     data_weather = df[["p37", "p18"]].copy()
     data_visib = df[["p37", "p19"]].copy()
 
@@ -50,6 +52,7 @@ def process_data(data_weather: pd.DataFrame, data_visib: pd.DataFrame):
         dataset, calculates accidents with given parametres."""
 
     # parse integer data to given labels
+    print("Processing data...")
     typ_silnice = [0, 100, 1000, np.inf]
     names = [
         "dálnice alebo cesta 1. triedy", 
@@ -97,6 +100,7 @@ def process_data(data_weather: pd.DataFrame, data_visib: pd.DataFrame):
 def plot_data(result1: pd.DataFrame, result2: pd.DataFrame):
     """ Function plots statistics of accidents based on visibility and weather
         at the time of the accident."""
+    print("Plotting...")
     sns.set(
         rc={
             "axes.grid": True,
@@ -140,6 +144,7 @@ def plot_data(result1: pd.DataFrame, result2: pd.DataFrame):
 
 def print_data(result1: pd.DataFrame, result2: pd.DataFrame):
     """Prints tables for plots and some interesting hand picked data."""
+    print("Printing tables to stdout...")
     print("TABULKA 1:")
     print(result1.to_latex(index=False))
     print("\n\nTABULKA 2:")
@@ -161,7 +166,9 @@ def print_data(result1: pd.DataFrame, result2: pd.DataFrame):
     )
 
 if __name__ == "__main__":
-    x, y = load_data("accidents.pkl.gz")
+    main_folder = Path(__file__).parent.parent.resolve()
+    print("Loading data...")
+    x, y = load_data(main_folder / "accidents.pkl.gz")
     result1, result2 = process_data(x, y)
     plot_data(result1, result2)
     print_data(result1, result2)

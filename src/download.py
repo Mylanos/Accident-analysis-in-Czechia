@@ -7,12 +7,11 @@ from os import path, listdir
 from os.path import isfile, join
 from zipfile import ZipFile
 import numpy as np
-import datetime
 import gzip
 import pickle
 import io
 from io import BytesIO
-import time
+from pathlib import Path
 
 
 class DataDownloader:
@@ -35,7 +34,8 @@ class DataDownloader:
             'KVK': '19'}):
 
         self.url = url
-        self.folder = folder
+        main_folder = Path(__file__).parent.parent.resolve()
+        self.folder = main_folder / folder
         self.cache_filename = cache_filename
         self.regions = regions
         self.data_files = []
@@ -50,6 +50,7 @@ class DataDownloader:
 
         if not path.isdir(self.folder):
             try:
+                print("Creating directory...")
                 os.mkdir(folder)
             except OSError:
                 print("Creation of the directory %s failed" % path)
@@ -157,12 +158,12 @@ class DataDownloader:
 
     def save_cache(self, region):
         '''Save cache locally.'''
-        with gzip.open("data/" + self.cache_filename.format(region), 'wb') as f:
+        with gzip.open(self.folder / self.cache_filename.format(region), 'wb') as f:
             pickle.dump(self.cache.get(region), f, pickle.HIGHEST_PROTOCOL)
 
     def load_cache(self, region):
         '''Load cache from local storage.'''
-        with gzip.open("data/" + self.cache_filename.format(region), 'rb') as f:
+        with gzip.open(self.folder / self.cache_filename.format(region), 'rb') as f:
             try:
                 while f.read(1024 * 1024):
                     pass
