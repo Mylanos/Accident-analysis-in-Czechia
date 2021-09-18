@@ -61,3 +61,8 @@ Data gets processed into dataframes, then gets analysed in certain factors/prope
 ─ **zadanie_cast1.pdf** - assignment
 ─ **zadanie_cast2.pdf** - assignment
 
+## Graphics output example
+Exact accidents locations  |  Cluster accidents location
+:-------------------------:|:-------------------------:
+![geo1.png](https://github.com/Mylanos/Accident-analysis-in-Czechia/blob/8259e738b9d958a6dd038c67dc4f236478b4cc25/graphs/geo1.png) | ![geo2.png](https://github.com/Mylanos/Accident-analysis-in-Czechia/blob/8259e738b9d958a6dd038c67dc4f236478b4cc25/graphs/geo2.png)
+
